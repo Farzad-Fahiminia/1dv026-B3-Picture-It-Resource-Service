@@ -14,4 +14,6 @@ const controller = new ResourceController()
 
 // Map HTTP verbs and route paths to controller actions.
 
-router.get('/images', controller.authenticateJWT, controller.getAllImages)
+router.get('/images', (req, res, next) => controller.authenticateJWT(req, res, next), (req, res, next) => controller.getAllImages(req, res, next))
+
+router.post('/images', (req, res, next) => controller.authenticateJWT(req, res, next), (req, res, next) => controller.addImage(req, res, next))

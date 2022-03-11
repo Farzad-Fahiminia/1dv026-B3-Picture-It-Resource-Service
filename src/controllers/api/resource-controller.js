@@ -5,8 +5,8 @@
  * @version 1.0.0
  */
 
-// import createError from 'http-errors'
 import jwt from 'jsonwebtoken'
+import fetch from 'node-fetch'
 import createError from 'http-errors'
 
 /**
@@ -39,7 +39,7 @@ authenticateJWT = (req, res, next) => {
       firstName: payload.given_name,
       lastName: payload.family_name,
       email: payload.email,
-      permissionLevel: payload.x_permission_level
+      id: payload.id
     }
 
     next()
@@ -51,7 +51,7 @@ authenticateJWT = (req, res, next) => {
 }
 
 /**
- * Authenticates a user.
+ * Get images.
  *
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
@@ -59,12 +59,54 @@ authenticateJWT = (req, res, next) => {
  */
 async getAllImages (req, res, next) {
   console.log('Halloj där kött och blåbär')
+  // console.log(req)
+  // const images = await Image.find({ userEmail: req.user }).exec()
+  // console.log(images)
   // try {
+  //   // if () {
+
+  //   // }
   // } catch (error) {
   //   const err = createError(401)
   //   err.cause = error
 
   //   next(err)
   // }
+}
+
+/**
+ * Post images.
+ *
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ */
+async addImage (req, res, next) {
+  console.log('Här postar vi våra bilder!')
+  // console.log(req.body)
+  // console.log(process.env.IMAGE_RESOURCE_URL)
+  try {
+    const response = await fetch(process.env.IMAGE_RESOURCE_URL,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-API-Private-Token': process.env.PERSONAL_ACCESS_TOKEN
+        },
+        body: JSON.stringify(req.body)
+      })
+    const dataJSON = await response.json()
+    // console.log(dataJSON)
+    // console.log(res.status(201))
+    res
+      .status(201)
+      .json(dataJSON)
+  } catch (error) {
+    console.log(error)
+    const err = createError(401)
+    err.cause = error
+
+    next(err)
+  }
 }
 }
