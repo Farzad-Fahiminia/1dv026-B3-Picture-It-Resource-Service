@@ -78,7 +78,7 @@ async getAllImages (req, res, next) {
 }
 
 /**
- * Get images.
+ * Get specific image.
  *
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
@@ -137,15 +137,53 @@ async addImage (req, res, next) {
       userId: req.user.id
     })
 
-    res
-      .status(201)
-      .json(dataJSON)
+    res.status(201).json(dataJSON)
 
-    console.log(imageObj)
+    // console.log(imageObj)
 
     await imageObj.save()
   } catch (error) {
     console.log(error)
+    const err = createError(401)
+    err.cause = error
+
+    next(err)
+  }
+}
+
+/**
+ * Delete specific image.
+ *
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ */
+async deleteImage (req, res, next) {
+  // console.log('Delete image-metoden!')
+  // console.log(req.params)
+  try {
+    const image = await Image.find({ imageId: req.params.id })
+    const findImage = await Image.exists({ imageId: req.params.id })
+    console.log(findImage)
+    if (findImage !== null) {
+      await fetch(process.env.IMAGE_RESOURCE_URL + '/' + req.params.id,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-API-Private-Token': process.env.PERSONAL_ACCESS_TOKEN
+          },
+          body: JSON.stringify(req.body)
+        })
+      // const dataJSON = await response.json()
+
+      // console.log(image[0])
+      await Image.findByIdAndDelete(image[0])
+      res.status(204).send('Image has been deleted!')
+    } else {
+      res.sendStatus(404)
+    }
+  } catch (error) {
     const err = createError(401)
     err.cause = error
 
