@@ -8,6 +8,7 @@
 import jwt from 'jsonwebtoken'
 import fetch from 'node-fetch'
 import createError from 'http-errors'
+import { Image } from '../../models/image.js'
 
 /**
  * Encapsulates a controller.
@@ -98,9 +99,20 @@ async addImage (req, res, next) {
     const dataJSON = await response.json()
     // console.log(dataJSON)
     // console.log(res.status(201))
+
+    const imageObj = new Image({
+      id: dataJSON.id,
+      imageUrl: dataJSON.imageUrl,
+      contentType: dataJSON.contentType
+    })
+
     res
       .status(201)
       .json(dataJSON)
+
+    console.log(imageObj)
+
+    await imageObj.save()
   } catch (error) {
     console.log(error)
     const err = createError(401)

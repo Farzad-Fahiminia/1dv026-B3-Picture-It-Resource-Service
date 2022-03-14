@@ -12,19 +12,13 @@ const schema = new mongoose.Schema({
   imageUrl: {
     type: String
   },
-  location: {
+  contentType: {
     type: String
   },
   description: {
     type: String
   },
-  createdAt: {
-    type: String
-  },
-  updatedAt: {
-    type: String
-  },
-  id: {
+  testId: {
     type: String
   }
 }, {
@@ -49,4 +43,4 @@ schema.virtual('id').get(function () {
 })
 
 // Create a model using the schema.
-export const Task = mongoose.model('Task', schema)
+export const Image = mongoose.model('Image', schema)
