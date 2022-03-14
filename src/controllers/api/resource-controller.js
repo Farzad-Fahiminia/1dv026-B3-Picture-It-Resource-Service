@@ -78,6 +78,32 @@ async getAllImages (req, res, next) {
 }
 
 /**
+ * Get images.
+ *
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ */
+async getImage (req, res, next) {
+  // console.log('Get image-metoden!')
+  // console.log(req.params)
+  try {
+    const image = await Image.find({ imageId: req.params.id }).exec()
+    // console.log(image)
+    if (image !== null) {
+      res.status(200).send(image)
+    } else {
+      res.status(404)
+    }
+  } catch (error) {
+    const err = createError(401)
+    err.cause = error
+
+    next(err)
+  }
+}
+
+/**
  * Post images.
  *
  * @param {object} req - Express request object.
