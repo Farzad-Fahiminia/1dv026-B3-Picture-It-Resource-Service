@@ -97,13 +97,16 @@ async addImage (req, res, next) {
         body: JSON.stringify(req.body)
       })
     const dataJSON = await response.json()
+    // console.log(req.user.id)
     // console.log(dataJSON)
     // console.log(res.status(201))
 
     const imageObj = new Image({
-      id: dataJSON.id,
+      imageId: dataJSON.id,
       imageUrl: dataJSON.imageUrl,
-      contentType: dataJSON.contentType
+      contentType: dataJSON.contentType,
+      description: req.body.description,
+      userId: req.user.id
     })
 
     res

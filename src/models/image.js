@@ -9,6 +9,9 @@ import mongoose from 'mongoose'
 
 // Create a schema.
 const schema = new mongoose.Schema({
+  imageId: {
+    type: String
+  },
   imageUrl: {
     type: String
   },
@@ -18,7 +21,7 @@ const schema = new mongoose.Schema({
   description: {
     type: String
   },
-  testId: {
+  userId: {
     type: String
   }
 }, {
