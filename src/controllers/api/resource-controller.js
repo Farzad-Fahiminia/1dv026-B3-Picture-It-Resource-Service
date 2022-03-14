@@ -61,18 +61,20 @@ authenticateJWT = (req, res, next) => {
 async getAllImages (req, res, next) {
   console.log('Halloj där kött och blåbär')
   // console.log(req.user.id)
-  const images = await Image.find({ userId: req.user.id }).exec()
-  console.log(images)
-  // try {
-  //   // if () {
+  try {
+    const images = await Image.find({ userId: req.user.id }).exec()
+    // console.log(images)
+    if (images !== null) {
+      res.status(200).send(images)
+    } else {
+      res.status(404)
+    }
+  } catch (error) {
+    const err = createError(401)
+    err.cause = error
 
-  //   // }
-  // } catch (error) {
-  //   const err = createError(401)
-  //   err.cause = error
-
-  //   next(err)
-  // }
+    next(err)
+  }
 }
 
 /**
