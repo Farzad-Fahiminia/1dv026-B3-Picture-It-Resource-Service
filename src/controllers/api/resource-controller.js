@@ -60,9 +60,9 @@ authenticateJWT = (req, res, next) => {
  */
 async getAllImages (req, res, next) {
   console.log('Halloj där kött och blåbär')
-  // console.log(req)
-  // const images = await Image.find({ userEmail: req.user }).exec()
-  // console.log(images)
+  // console.log(req.user.id)
+  const images = await Image.find({ userId: req.user.id }).exec()
+  console.log(images)
   // try {
   //   // if () {
 
