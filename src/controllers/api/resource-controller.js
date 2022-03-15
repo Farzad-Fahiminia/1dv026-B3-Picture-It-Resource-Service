@@ -111,28 +111,31 @@ async getImage (req, res, next) {
  */
 async addImage (req, res, next) {
   try {
-    const response = await fetch(process.env.IMAGE_RESOURCE_URL,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-API-Private-Token': process.env.PERSONAL_ACCESS_TOKEN
-        },
-        body: JSON.stringify(req.body)
+    if (req.body.data === undefined || req.body.contentType === undefined) {
+      next(createError(400, 'The request cannot or will not be processed due to something that is perceived to be a client error (for example, validation error).'))
+    } else {
+      const response = await fetch(process.env.IMAGE_RESOURCE_URL,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-API-Private-Token': process.env.PERSONAL_ACCESS_TOKEN
+          },
+          body: JSON.stringify(req.body)
+        })
+      const dataJSON = await response.json()
+
+      const imageObj = new Image({
+        imageId: dataJSON.id,
+        imageUrl: dataJSON.imageUrl,
+        contentType: dataJSON.contentType,
+        description: req.body.description,
+        userId: req.user.id
       })
-    const dataJSON = await response.json()
 
-    const imageObj = new Image({
-      imageId: dataJSON.id,
-      imageUrl: dataJSON.imageUrl,
-      contentType: dataJSON.contentType,
-      description: req.body.description,
-      userId: req.user.id
-    })
-
-    res.status(201).json(dataJSON)
-
-    await imageObj.save()
+      await imageObj.save()
+      res.status(201).json(dataJSON)
+    }
   } catch (error) {
     console.log(error)
     const err = createError(500, 'An unexpected condition was encountered.')
@@ -151,33 +154,37 @@ async addImage (req, res, next) {
  */
 async putImage (req, res, next) {
   try {
-    const image = await Image.find({ imageId: req.params.id })
-    if (req.user.id === image[0].userId) {
-      if (image !== null) {
-        const imageObj = {
-          contentType: req.body.contentType,
-          description: req.body.description
-        }
-
-        await fetch(process.env.IMAGE_RESOURCE_URL + '/' + req.params.id,
-          {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-API-Private-Token': process.env.PERSONAL_ACCESS_TOKEN
-            },
-            body: JSON.stringify(imageObj)
-          })
-
-        const newImageData = await Image.findByIdAndUpdate(image, imageObj, { runValidators: true })
-        await newImageData.save()
-
-        res.sendStatus(204)
-      } else {
-        next(createError(404, 'The requested resource was not found.'))
-      }
+    if (req.body.data === undefined || req.body.contentType === undefined) {
+      next(createError(400, 'The request cannot or will not be processed due to something that is perceived to be a client error (for example, validation error).'))
     } else {
-      next(createError(403, 'The request contained valid data and was understood by the server, but the server is refusing action due to the authenticated user not having the necessary permissions for the resource.'))
+      const image = await Image.find({ imageId: req.params.id })
+      if (req.user.id === image[0].userId) {
+        if (image !== null) {
+          const imageObj = {
+            contentType: req.body.contentType,
+            description: req.body.description
+          }
+
+          await fetch(process.env.IMAGE_RESOURCE_URL + '/' + req.params.id,
+            {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-API-Private-Token': process.env.PERSONAL_ACCESS_TOKEN
+              },
+              body: JSON.stringify(imageObj)
+            })
+
+          const newImageData = await Image.findByIdAndUpdate(image, imageObj, { runValidators: true })
+          await newImageData.save()
+
+          res.sendStatus(204)
+        } else {
+          next(createError(404, 'The requested resource was not found.'))
+        }
+      } else {
+        next(createError(403, 'The request contained valid data and was understood by the server, but the server is refusing action due to the authenticated user not having the necessary permissions for the resource.'))
+      }
     }
   } catch (error) {
     const err = createError(500, 'An unexpected condition was encountered.')
@@ -225,8 +232,10 @@ async patchImage (req, res, next) {
       next(createError(403, 'The request contained valid data and was understood by the server, but the server is refusing action due to the authenticated user not having the necessary permissions for the resource.'))
     }
   } catch (error) {
-    const err = createError(500, 'An unexpected condition was encountered.')
-    err.cause = error
+    let err = error
+    if (err.name === 'ValidationError') {
+      err = createError(400)
+    }
 
     next(err)
   }

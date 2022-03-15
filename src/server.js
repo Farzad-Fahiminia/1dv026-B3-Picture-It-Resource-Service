@@ -40,23 +40,6 @@ try {
           message: err.message
         })
     }
-
-    // Development only!
-    // Only providing detailed error in development.
-    return res
-      .status(err.status)
-      .json({
-        status: err.status,
-        message: err.message,
-        cause: err.cause
-          ? {
-              status: err.cause.status,
-              message: err.cause.message,
-              stack: err.cause.stack
-            }
-          : null,
-        stack: err.stack
-      })
   })
 
   // Starts the HTTP server listening for connections.

@@ -10,19 +10,28 @@ import mongoose from 'mongoose'
 // Create a schema.
 const schema = new mongoose.Schema({
   imageId: {
-    type: String
+    type: String,
+    required: true,
+    immutable: true
   },
   imageUrl: {
-    type: String
+    type: String,
+    required: true,
+    immutable: true
   },
   contentType: {
-    type: String
+    type: String,
+    required: true,
+    enum: ['image/gif', 'image/jpeg', 'image/png']
   },
   description: {
-    type: String
+    type: String,
+    maxlength: [300, 'The description has a max length of 300 characters.']
   },
   userId: {
-    type: String
+    type: String,
+    required: true,
+    immutable: true
   }
 }, {
   timestamps: true,
