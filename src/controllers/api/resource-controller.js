@@ -31,7 +31,7 @@ authenticateJWT = (req, res, next) => {
     const [authenticationScheme, token] = req.headers.authorization?.split(' ')
 
     if (authenticationScheme !== 'Bearer') {
-      throw new Error('Invalid authentication scheme.')
+      next(createError(400, 'The request cannot or will not be processed due to something that is perceived to be a client error (for example, validation error).'))
     }
 
     const payload = jwt.verify(token, publicKey)
@@ -59,18 +59,16 @@ authenticateJWT = (req, res, next) => {
  * @param {Function} next - Express next middleware function.
  */
 async getAllImages (req, res, next) {
-  console.log('Halloj där kött och blåbär')
-  // console.log(req.user.id)
   try {
-    const images = await Image.find({ userId: req.user.id }).exec()
-    // console.log(images)
+    const images = await Image.find({ userId: req.user.id })
     if (images !== null) {
       res.status(200).send(images)
     } else {
       res.status(404)
     }
   } catch (error) {
-    const err = createError(401)
+    console.log(error)
+    const err = createError(500, 'An unexpected condition was encountered.')
     err.cause = error
 
     next(err)
@@ -85,18 +83,19 @@ async getAllImages (req, res, next) {
  * @param {Function} next - Express next middleware function.
  */
 async getImage (req, res, next) {
-  // console.log('Get image-metoden!')
-  // console.log(req.params)
   try {
-    const image = await Image.find({ imageId: req.params.id }).exec()
-    // console.log(image)
-    if (image !== null) {
-      res.status(200).send(image)
+    const image = await Image.find({ imageId: req.params.id })
+    if (req.user.id === image[0].userId) {
+      if (image.length > 0 && image !== null) {
+        res.status(200).send(image)
+      } else {
+        next(createError(404, 'The requested resource was not found.'))
+      }
     } else {
-      res.status(404)
+      next(createError(403, 'The request contained valid data and was understood by the server, but the server is refusing action due to the authenticated user not having the necessary permissions for the resource.'))
     }
   } catch (error) {
-    const err = createError(401)
+    const err = createError(500, 'An unexpected condition was encountered.')
     err.cause = error
 
     next(err)
@@ -111,9 +110,6 @@ async getImage (req, res, next) {
  * @param {Function} next - Express next middleware function.
  */
 async addImage (req, res, next) {
-  console.log('Här postar vi våra bilder!')
-  // console.log(req.body)
-  // console.log(process.env.IMAGE_RESOURCE_URL)
   try {
     const response = await fetch(process.env.IMAGE_RESOURCE_URL,
       {
@@ -125,9 +121,6 @@ async addImage (req, res, next) {
         body: JSON.stringify(req.body)
       })
     const dataJSON = await response.json()
-    // console.log(req.user.id)
-    // console.log(dataJSON)
-    // console.log(res.status(201))
 
     const imageObj = new Image({
       imageId: dataJSON.id,
@@ -139,12 +132,10 @@ async addImage (req, res, next) {
 
     res.status(201).json(dataJSON)
 
-    // console.log(imageObj)
-
     await imageObj.save()
   } catch (error) {
     console.log(error)
-    const err = createError(401)
+    const err = createError(500, 'An unexpected condition was encountered.')
     err.cause = error
 
     next(err)
@@ -159,38 +150,37 @@ async addImage (req, res, next) {
  * @param {Function} next - Express next middleware function.
  */
 async putImage (req, res, next) {
-  // console.log('Put image-metoden!')
   try {
     const image = await Image.find({ imageId: req.params.id })
-    // console.log(image)
-    if (image !== null) {
-      const imageObj = {
-        contentType: req.body.contentType,
-        description: req.body.description
+    if (req.user.id === image[0].userId) {
+      if (image !== null) {
+        const imageObj = {
+          contentType: req.body.contentType,
+          description: req.body.description
+        }
+
+        await fetch(process.env.IMAGE_RESOURCE_URL + '/' + req.params.id,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-API-Private-Token': process.env.PERSONAL_ACCESS_TOKEN
+            },
+            body: JSON.stringify(imageObj)
+          })
+
+        const newImageData = await Image.findByIdAndUpdate(image, imageObj, { runValidators: true })
+        await newImageData.save()
+
+        res.sendStatus(204)
+      } else {
+        next(createError(404, 'The requested resource was not found.'))
       }
-
-      await fetch(process.env.IMAGE_RESOURCE_URL + '/' + req.params.id,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-API-Private-Token': process.env.PERSONAL_ACCESS_TOKEN
-          },
-          body: JSON.stringify(imageObj)
-        })
-      // const dataJSON = await response.json()
-
-      // console.log(req.body)
-
-      const newImageData = await Image.findByIdAndUpdate(image, imageObj, { runValidators: true })
-      await newImageData.save()
-
-      res.sendStatus(204)
     } else {
-      res.status(404)
+      next(createError(403, 'The request contained valid data and was understood by the server, but the server is refusing action due to the authenticated user not having the necessary permissions for the resource.'))
     }
   } catch (error) {
-    const err = createError(401)
+    const err = createError(500, 'An unexpected condition was encountered.')
     err.cause = error
 
     next(err)
@@ -198,45 +188,44 @@ async putImage (req, res, next) {
 }
 
 /**
- * Put specific image.
+ * Patch specific image.
  *
  * @param {object} req - Express request object.
  * @param {object} res - Express response object.
  * @param {Function} next - Express next middleware function.
  */
 async patchImage (req, res, next) {
-  console.log('Patch-metoden!')
   try {
     const image = await Image.find({ imageId: req.params.id })
-    // console.log(image)
-    if (image !== null) {
-      const imageObj = {
-        contentType: req.body.contentType,
-        description: req.body.description
+    if (req.user.id === image[0].userId) {
+      if (image !== null) {
+        const imageObj = {
+          contentType: req.body.contentType,
+          description: req.body.description
+        }
+
+        await fetch(process.env.IMAGE_RESOURCE_URL + '/' + req.params.id,
+          {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-API-Private-Token': process.env.PERSONAL_ACCESS_TOKEN
+            },
+            body: JSON.stringify(imageObj)
+          })
+
+        const newImageData = await Image.findByIdAndUpdate(image, imageObj, { runValidators: true })
+        await newImageData.save()
+
+        res.sendStatus(204)
+      } else {
+        next(createError(404, 'The requested resource was not found.'))
       }
-
-      await fetch(process.env.IMAGE_RESOURCE_URL + '/' + req.params.id,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-API-Private-Token': process.env.PERSONAL_ACCESS_TOKEN
-          },
-          body: JSON.stringify(imageObj)
-        })
-      // const dataJSON = await response.json()
-
-      // console.log(req.body)
-
-      const newImageData = await Image.findByIdAndUpdate(image, imageObj, { runValidators: true })
-      await newImageData.save()
-
-      res.sendStatus(204)
     } else {
-      res.status(404)
+      next(createError(403, 'The request contained valid data and was understood by the server, but the server is refusing action due to the authenticated user not having the necessary permissions for the resource.'))
     }
   } catch (error) {
-    const err = createError(401)
+    const err = createError(500, 'An unexpected condition was encountered.')
     err.cause = error
 
     next(err)
@@ -251,32 +240,20 @@ async patchImage (req, res, next) {
  * @param {Function} next - Express next middleware function.
  */
 async deleteImage (req, res, next) {
-  // console.log('Delete image-metoden!')
-  // console.log(req.params)
   try {
     const image = await Image.find({ imageId: req.params.id })
-    const findImage = await Image.exists({ imageId: req.params.id })
-    console.log(findImage)
-    if (findImage !== null) {
-      await fetch(process.env.IMAGE_RESOURCE_URL + '/' + req.params.id,
-        {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-API-Private-Token': process.env.PERSONAL_ACCESS_TOKEN
-          },
-          body: JSON.stringify(req.body)
-        })
-      // const dataJSON = await response.json()
-
-      // console.log(image[0])
-      await Image.findByIdAndDelete(image[0])
-      res.status(204).send('Image has been deleted!')
+    if (req.user.id === image[0].userId) {
+      if (image !== null) {
+        await Image.findByIdAndDelete(image[0])
+        res.status(204).send('Image has been deleted!')
+      } else {
+        next(createError(404, 'The requested resource was not found.'))
+      }
     } else {
-      res.sendStatus(404)
+      next(createError(403, 'The request contained valid data and was understood by the server, but the server is refusing action due to the authenticated user not having the necessary permissions for the resource.'))
     }
   } catch (error) {
-    const err = createError(401)
+    const err = createError(500, 'An unexpected condition was encountered.')
     err.cause = error
 
     next(err)
