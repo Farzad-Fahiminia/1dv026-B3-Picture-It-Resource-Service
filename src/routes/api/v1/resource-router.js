@@ -19,4 +19,5 @@ router.get('/images/:id', (req, res, next) => controller.authenticateJWT(req, re
 
 router.post('/images', (req, res, next) => controller.authenticateJWT(req, res, next), (req, res, next) => controller.addImage(req, res, next))
 router.put('/images/:id', (req, res, next) => controller.authenticateJWT(req, res, next), (req, res, next) => controller.putImage(req, res, next))
+router.patch('/images/:id', (req, res, next) => controller.authenticateJWT(req, res, next), (req, res, next) => controller.patchImage(req, res, next))
 router.delete('/images/:id', (req, res, next) => controller.authenticateJWT(req, res, next), (req, res, next) => controller.deleteImage(req, res, next))

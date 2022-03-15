@@ -159,10 +159,10 @@ async addImage (req, res, next) {
  * @param {Function} next - Express next middleware function.
  */
 async putImage (req, res, next) {
-  console.log('Put image-metoden!')
+  // console.log('Put image-metoden!')
   try {
     const image = await Image.find({ imageId: req.params.id })
-    console.log(image)
+    // console.log(image)
     if (image !== null) {
       const imageObj = {
         contentType: req.body.contentType,
@@ -172,6 +172,52 @@ async putImage (req, res, next) {
       await fetch(process.env.IMAGE_RESOURCE_URL + '/' + req.params.id,
         {
           method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-API-Private-Token': process.env.PERSONAL_ACCESS_TOKEN
+          },
+          body: JSON.stringify(imageObj)
+        })
+      // const dataJSON = await response.json()
+
+      // console.log(req.body)
+
+      const newImageData = await Image.findByIdAndUpdate(image, imageObj, { runValidators: true })
+      await newImageData.save()
+
+      res.sendStatus(204)
+    } else {
+      res.status(404)
+    }
+  } catch (error) {
+    const err = createError(401)
+    err.cause = error
+
+    next(err)
+  }
+}
+
+/**
+ * Put specific image.
+ *
+ * @param {object} req - Express request object.
+ * @param {object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ */
+async patchImage (req, res, next) {
+  console.log('Patch-metoden!')
+  try {
+    const image = await Image.find({ imageId: req.params.id })
+    // console.log(image)
+    if (image !== null) {
+      const imageObj = {
+        contentType: req.body.contentType,
+        description: req.body.description
+      }
+
+      await fetch(process.env.IMAGE_RESOURCE_URL + '/' + req.params.id,
+        {
+          method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
             'x-API-Private-Token': process.env.PERSONAL_ACCESS_TOKEN
